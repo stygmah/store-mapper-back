@@ -11,6 +11,7 @@ export default [
   {
     path: path,
     method: "get",
+    auth:true,
     handler: async (req: Request, res: Response) => 
     {
       res.send("Hello world!");
@@ -19,6 +20,7 @@ export default [
   {
     path:path,
     method: "post",
+    auth:false,
     handler: async (req: Request, res: Response) =>
     {
       const userData = req.body;
@@ -37,6 +39,7 @@ export default [
   {
     path:path+'/login',
     method:'post',
+    auth:false,
     handler: async (req: Request, res: Response) =>
     {
       const loginData = req.body;

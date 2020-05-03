@@ -1,4 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { handleAuthRoutes } from "../middleware/auth";
+
 
 //Type Declarations
 type Wrapper = ((router: Router) => void);
@@ -12,6 +14,7 @@ type Handler = (
 type Route = {
     path: string;
     method: string;
+    auth: boolean;
     handler: Handler | Handler[];
 };
 
@@ -24,7 +27,14 @@ export const applyMiddleware = (middlewareWrappers: Wrapper[],router: Router) =>
 //Apply Routes
 export const applyRoutes = (routes: Route[], router: Router) => {
     for (const route of routes) {
-        const { method, path, handler } = route;
-        (router as any)[method](path, handler);
+        //Can apply auth here
+        const { method, path, handler, auth } = route;
+
+        if(auth){
+            (router as any)[method](path, handleAuthRoutes, handler);
+        }else{
+            (router as any)[method](path, handler);
+        }
+
     }
 };
