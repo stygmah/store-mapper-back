@@ -8,18 +8,20 @@ const path = "/users";
 const saltRounds = 5;
 
 export default [
+  //Get User
   {
     path: path,
-    method: "get",
+    method: 'get',
     auth:true,
     handler: async (req: Request, res: Response) => 
     {
-      res.send("Hello world!");
+      res.send(req.body.user);
     }
   },
+  //Register new user
   {
     path:path,
-    method: "post",
+    method: 'post',
     auth:false,
     handler: async (req: Request, res: Response) =>
     {
@@ -36,6 +38,7 @@ export default [
       res.send(respsonse);
     }
   },
+  //Login
   {
     path:path+'/login',
     method:'post',
@@ -49,6 +52,8 @@ export default [
           const match = await bcrypt.compare(loginData.password, user.password);
           if(match)
           {
+            user.password = '';
+            user.salt = '';
             sendToken(res, user);
           } else {res.status(401).send();}
         } 

@@ -29,7 +29,6 @@ export const applyRoutes = (routes: Route[], router: Router) => {
     for (const route of routes) {
         //Can apply auth here
         const { method, path, handler, auth } = route;
-
         if(auth){
             (router as any)[method](path, handleAuthRoutes, handler);
         }else{
