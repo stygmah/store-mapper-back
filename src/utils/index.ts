@@ -1,7 +1,6 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { handleAuthRoutes } from "../middleware/auth";
 
-
 //Type Declarations
 type Wrapper = ((router: Router) => void);
 
@@ -37,3 +36,4 @@ export const applyRoutes = (routes: Route[], router: Router) => {
 
     }
 };
+

@@ -1,4 +1,4 @@
 
-import {handleCors, handleBodyRequestParsing, handleCompression} from "./common";
+import {handleCors, handleBodyRequestParsing, handleCompression, handleUrlEncoded} from "./common";
   
-export default [handleCors, handleBodyRequestParsing, handleCompression];
+export default [handleCors, handleBodyRequestParsing, handleCompression, handleUrlEncoded];

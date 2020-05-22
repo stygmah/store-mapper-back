@@ -20,23 +20,27 @@ export default [
   },
   //Register new user
   {
-    path:path,
-    method: 'post',
-    auth:false,
-    handler: async (req: Request, res: Response) =>
-    {
-      const userData = req.body;
-      const salt = await bcrypt.genSalt(saltRounds);
-      const hash = await bcrypt.hash(userData.password, salt);
-      const user = new User({
-        ...userData,
-        password: hash,
-        salt: salt
-      });
-      //TODO: Remove password from response and define types for user
-      const respsonse = await user.save();
-      res.send(respsonse);
-    }
+        path:path+'/register',
+        method: 'post',
+        auth:false,
+        handler: async (req: Request, res: Response) =>
+        {
+            const userData = req.body;
+            const existingUser = await User.findOne({email:userData.email});
+            if(existingUser == null){
+                const salt = await bcrypt.genSalt(saltRounds);
+                const hash = await bcrypt.hash(userData.password, salt);
+                const user = new User({
+                  ...userData,
+                  password: hash,
+                  salt: salt
+                });
+                const respsonse = await user.save();
+                res.status(201).send();
+            } else {
+                res.status(409).send();
+            }
+        }
   },
   //Login
   {
@@ -46,29 +50,46 @@ export default [
     handler: async (req: Request, res: Response) =>
     {
       const loginData = req.body;
-      const user = await User.findOne({email: loginData.email});
+      const user:any = await User.findOne({email: loginData.email});
       if(user != null)
         {
-          const match = await bcrypt.compare(loginData.password, user.password);
-          if(match)
-          {
-            user.password = '';
-            user.salt = '';
-            sendToken(res, user);
-          } else {res.status(401).send();}
+			const match = await bcrypt.compare(loginData.password, user.password);
+			if(match)
+			{
+				user.password = undefined;
+				user.salt = undefined;
+				sendToken(res, user);
+			} else {res.status(401).send();}
         } 
         else {res.status(401).send();}
     }
+  },
+  ///Reset Password
+  {
+    path:path+'/reset-password',
+    method:'post',
+    auth:false,
+    handler: async (req: Request, res: Response) =>
+    {
+		const email = req.body.email;
+		const user:any = await User.findOne({email: email});
+		if(!user){
+			res.status(404).send();
+		}else{
+			res.send();//TODO: Add email password recovery functionality
+		}
+    }
   }
+  
 ];
 
 
 const sendToken = (res: Response, user: any)=>{
-  const secret: string = process.env.TOKEN_KEY ? process.env.TOKEN_KEY : 'ERROR';
-  if(secret == 'ERROR') res.status(500).send('no secret');
-  const token = jwt.sign({ user }, secret , {expiresIn: "24h"});
-  res.json({
-    user,
-    token
-  });
+	const secret: string = process.env.TOKEN_KEY ? process.env.TOKEN_KEY : 'ERROR';
+	if(secret == 'ERROR') res.status(500).send('no secret');
+	const token = jwt.sign({ user }, secret , {expiresIn: "24h"});
+	res.json({
+		user,
+		token
+	});
 }

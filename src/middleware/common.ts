@@ -14,3 +14,9 @@ export const handleBodyRequestParsing = (router: Router) => {
 export const handleCompression = (router: Router) => {
     router.use(compression());
 };
+
+export const handleUrlEncoded = (router: Router) => {
+    router.use(parser.urlencoded({
+        extended: true
+    }));
+}

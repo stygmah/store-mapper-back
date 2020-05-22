@@ -7,6 +7,7 @@ import routes from "./services";
 import middleware from "./middleware";
 import errorHandlers from "./middleware/errorHandlers";
 import connect from './db/index';
+const fileUpload = require('express-fileupload');
 
 
 process.on("uncaughtException", e => {
@@ -20,15 +21,31 @@ process.on("unhandledRejection", e => {
 
 const router = express();
 
+///manual routes
+router.use(fileUpload({
+    createParentPath: true
+}));
 
+
+///
 
 applyMiddleware(middleware, router);
 applyRoutes(routes, router);
 applyMiddleware(errorHandlers, router);
 
+
+
+///manual routes
+router.use(fileUpload({
+    createParentPath: true
+}));
+
+
+///
+
 const { PORT = 3000 } = process.env;
 const server = http.createServer(router);
-const db: string = "mongodb://localhost:27017/store-mapper"
+const db: string = `mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@ds363058.mlab.com:63058/cartografy_stage`;
 
 connect(db);
 
