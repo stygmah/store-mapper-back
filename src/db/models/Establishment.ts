@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface Establishment extends Document {
   name: string;
   address: string;
-  country: string;
+  country: any;
   city: string;
   phone: string;
   email: string;
@@ -20,7 +20,7 @@ export interface Establishment extends Document {
 const EstablishmentSchema: Schema = new Schema({
   name: { type: String, required: true },
   address: { type: String, required: true },
-  country: { type: String, required: true },
+  country: { type: Schema.Types.Mixed, required: true },
   city: { type: String, required: true },
   phone: { type: String},
   email: { type: String},

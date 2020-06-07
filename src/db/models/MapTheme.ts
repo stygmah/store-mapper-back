@@ -9,7 +9,7 @@ export interface MapTheme extends Document {
 }
 
 const MapThemeSchema: Schema = new Schema({
-    name: { type: String, required: true },//TODO: Change to multilang
+    name: { type: String, required: true, unique : true },//TODO: Change to multilang
     imgURL: { type: String, required: true },
     order: {type: Number, required: true},
     description: { type: String},

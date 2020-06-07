@@ -1,7 +1,8 @@
 
 import { Request, Response } from "express";
 import * as aws from 'aws-sdk';
-import { GetObjectRequest } from "aws-sdk/clients/s3";
+import { GetObjectRequest, DeleteObjectsRequest } from "aws-sdk/clients/s3";
+import { DeleteObjectRequest } from "aws-sdk/clients/clouddirectory";
 
 
 const path = "/upload";
@@ -14,13 +15,13 @@ aws.config.update({
 const s3 = new aws.S3();
 
 export default [
-    //Get Map
     {
         path: path,
         method: 'post',
         auth:true,
         handler: async (req: Request, res: Response) => 
         {
+            console.log(process.env.MAX_IMG_SIZE)
             const filename = `${req.body.user.user._id }_${new Date().getTime()}`
             try {
                 if(!req.files) {
@@ -29,9 +30,14 @@ export default [
                         message: 'No file uploaded'
                     });
                 } else {
-                    //Use the name of the input field (i.e. "avatar") to retrieve the uploaded file
-                    let avatar: any = req.files.file;
-
+                    //TODO: Check if image
+                    let avatar: any = req.files.fileKey;
+                    if(process.env.MAX_IMG_SIZE && avatar.size >  process.env.MAX_IMG_SIZE ){
+                        res.status(400).send({
+                            error: 'ERR_MAX_FILE_SIZE',
+                            msg: 'Max file size exceeded'
+                        })
+                    }
                     //Use the mv() method to place the file in upload directory (i.e. "uploads")
                     //avatar.mv('./uploads/' + filename);
                     
@@ -39,8 +45,8 @@ export default [
 
                     s3.upload(params, (err: any,data: any)=>{
                         if(err) console.log(err);
-                        console.log(data.headers)
-                        res.send({url: data})
+
+                        res.send({...data, name: data.key.substring(data.key.lastIndexOf('/')+1)})
                     });
                 }
             } catch (err) {
@@ -63,6 +69,69 @@ export default [
                 res.status(500).send(err);
             }
         }
+    },
+    {
+        path: '/img/:key',
+        method: 'delete',
+        auth:true,
+        handler: async (req: Request, res: Response) => 
+        {
+
+            const key = req.params.key;
+            console.log('delete:'+key)
+            const userId = req.body.user.user._id;
+
+            if(validateOwnership(userId, key)){
+                try {
+
+                    const params = { 
+                        Bucket: process.env.S3_BUCKET,
+                        Key: 'img/'+key
+                    } as GetObjectRequest;
+                    s3.deleteObject(params, (err,data)=>{
+                        if(err) res.status(500).send();
+                        else res.send({status: 'DELETED'});
+                    });
+
+                } catch (err) {
+                    console.log(err)
+                    res.status(500).send(err);
+                }
+            }else{res.status(401).send()}
+
+
+        }
+    },
+    //delete multiple imgs
+    {
+        path: '/img/delete-multiple',
+        method: 'post',
+        auth:true,
+        handler: async (req: Request, res: Response) => 
+        {
+            const keys = keyToImgKeys(req.body.keys);
+            const userId = req.body.user.user._id;
+            if(validateMultipleOwnership(userId, req.body.keys)){
+                try {
+                    const params = { 
+                        Bucket: process.env.S3_BUCKET,
+                        Delete: {
+                            Objects: keys
+                        }
+                    } as DeleteObjectsRequest;
+
+                    s3.deleteObjects(params, (err,data)=>{
+                        console.log('aqui stem')
+                        if(err) res.status(500).send();
+                        else res.send({status: 'DELETED'});
+                    });
+
+                } catch (err) {
+                    console.log(err)
+                    res.status(500).send(err);
+                }
+            }else{res.status(401).send()}
+        }
     }
 ];
 
@@ -84,4 +153,25 @@ const getElement = async function getImage(key: string){
         } as GetObjectRequest
     ).promise();
     return data;
+}
+
+const validateOwnership = (id: string, file: string): boolean => {
+    return id === file.split("_")[0];
+}
+
+const validateMultipleOwnership = (id: string, files: string[]): boolean => {
+    let match = true;
+    files.forEach((file)=>{
+        if (!validateOwnership(id, file)) { match = false}
+    })
+    return match;
+}
+
+const keyToImgKeys = (keyArray: string[]): any[] => {
+    console.log(keyArray)
+    let result:any[] = [];
+    keyArray.forEach((key)=>{
+        result.push({Key: 'img/'+key})
+    });
+    return result;
 }

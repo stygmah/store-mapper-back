@@ -5,7 +5,7 @@ export interface User extends Document {
   surname: string;
   email: string;
   password: string;
-  salt: string;
+  gApiKey?: string;
 }
 
 const UserSchema: Schema = new Schema({
@@ -13,7 +13,7 @@ const UserSchema: Schema = new Schema({
   surname: { type: String, required: true },
   email: { type: String, required: true },
   password: { type: String, required: true },
-  salt: { type: String, required: true },
+  gApiKey: { type: String },
 });
 
 const User = mongoose.model<User>("User", UserSchema);

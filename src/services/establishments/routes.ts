@@ -2,6 +2,7 @@
 import { Request, Response, response } from "express";
 import { Types } from "mongoose";
 import Establishment from "../../db/models/Establishment";
+import { stringify } from "querystring";
 
 const path = "/establishments";
 
@@ -15,7 +16,6 @@ export default [
         {
             let establishment = null;
             if(Types.ObjectId.isValid(req.params.id))  establishment= await Establishment.findById(Types.ObjectId(req.params.id)).select("-createdAt -updatedAt");
-            
             if(establishment == null) {
                 res.status(404).send();
             } else { 
@@ -61,7 +61,6 @@ export default [
         handler: async (req: Request, res: Response) =>
         {
             const user = req.body.user.user;
-            delete req.body.user;
             if(user == null)
             { 
                 res.status(401).send()
@@ -70,7 +69,7 @@ export default [
             {//Test if error 400
                 const establishment = new Establishment
                 ({
-                    ...req.body,
+                    ...req.body.establishment,
                     owner: Types.ObjectId( user?._id),
                 });
                 const doc = await establishment.save();
@@ -81,38 +80,47 @@ export default [
 
     //Edit  establishment
     {
-        path:path+'/:id',
+        path:path+'/get/:id',
         method: 'post',
         auth:true,
         handler: async (req: Request, res: Response) =>
         {
-            const user = req.body.user;//TODO: Check if same user
-            const id = Types.ObjectId(req.body.establishment._id);
-            let establishment = cleanUndesiredFields(req.body.establishment);
-            const doc = await Establishment.findByIdAndUpdate({id},establishment);
+            const user = req.body.user.user;//TODO: Check if same user
+            const id = Types.ObjectId(req.params.id);
+            const establishment = cleanUndesiredFields(req.body.establishment);
+            const doc = await Establishment.findOneAndUpdate({_id:id,owner:user._id},establishment);
             if(doc != null) {res.send(doc);} else {res.status(404).send()}
         }
     },
 
     //Delete establishment
     {
-        path:path,
+        path:path+'/delete',
         method: 'post',
-        auth:true,
+        auth:true, 
         handler: async (req: Request, res: Response) =>
-        {
-            const user = req.body.user;//TODO: Check if same user
-            const id = Types.ObjectId(req.body.id);
-            const doc = await Establishment.findByIdAndDelete({id});
+        {   
+            const query = getObjectsToReference(req.body.ids, req.body.user.user._id);
+            const doc = await Establishment.deleteMany(query);
+            console.log(query)
+            console.log(doc.deletedCount)
             if(doc != null) {res.send(doc);} else {res.status(404).send()}
         }
     },
+    
 ];
 
 
 const cleanUndesiredFields = (establishment: any)=>{
-    if(establishment._id) establishment._id = undefined;
     if(establishment.owner) establishment.owner = undefined;
     if(establishment.establishmentsMap) establishment.establishmentsMap = undefined;
-    return cleanUndesiredFields;
+    return establishment;
+}
+
+const getObjectsToReference = (ids: string[], userId: string): any => {
+    let queries: any[] = [];
+    ids.forEach((element)=>{
+        queries.push(Types.ObjectId(element));
+    })
+    return {_id: {$in:queries}, owner:Types.ObjectId(userId) };
 }

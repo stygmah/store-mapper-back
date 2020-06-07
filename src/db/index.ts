@@ -5,7 +5,7 @@ export default (db: string) => {
         mongoose
         .connect(db, { useNewUrlParser: true })
         .then(() => {
-            return console.log(`Successfully connected to ${db}`);
+            return console.log(`Successfully connected to mongo database`);
         })
         .catch(error => {
             console.log("Error connecting to database: ", error);
